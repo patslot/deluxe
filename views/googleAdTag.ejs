@@ -1,0 +1,175 @@
+<script src="https://www.googletagservices.com/tag/js/gpt.js">
+</script>
+<script>
+var adPrefixTag = '7350';
+var pageAdTag = '<%= adTag %>';
+var webTags = [];
+var mobileTags = [];
+
+if (adPrefixTag !== "") {
+  webTags.push(adPrefixTag);
+  mobileTags.push(adPrefixTag);
+}
+
+webTags.push('dev.ADD');
+webTags.push(pageAdTag);
+
+mobileTags.push('dev.ADD_Mobilesite');
+
+// form SplashAd tag prefix
+var isArticle = false;
+var pageTags = pageAdTag.split("_");
+if (pageTags.length === 2) {
+  if (pageTags[1] === "art" ||
+    pageTags[0] !== "Contributor" && pageTags[1] === "detail") {
+    isArticle = true;
+  }
+}
+var mobileSplashPrefix = "/" + mobileTags.join("/") + "/" +
+  (isArticle? "Article" : "Index") + "/";
+
+mobileTags.push(pageAdTag);
+
+var webPrefix = "/" + webTags.join("/") + "/";
+var webSlotSizes = {
+  HeadBanner: [[970, 90], [970, 160], [970, 250]],
+  LREC1: [[300, 250], [300, 430], [300, 600]],
+  LREC2: [[300, 250], [300, 430], [300, 600]],
+  Midbanner: [[970, 90], [970, 160], [970, 250]],
+  Skyscraper1: [[120, 600], [160, 600]],
+  Skyscraper2: [[120, 600], [160, 600]]
+};
+
+var mobilePrefix = "/" + mobileTags.join("/") + "/";
+var mobileSlotSizes = {
+  Fixedbanner1: [[1, 1], [320, 361]],
+  Fixedbanner2: [[320, 80], [320, 360], [300, 250]],
+  Fixedbanner3: [[320, 80], [320, 360], [300, 250]],
+  Fixedbanner4: [[320, 80], [320, 360], [300, 250]],
+  Fixedbanner5: [[320, 80], [320, 360], [300, 250]],
+  Fixedbanner6: [[320, 80], [320, 360], [300, 250]],
+  Fixedbanner7: [[320, 80], [320, 360], [300, 250]],
+  Fixedbanner8: [[320, 80], [320, 360], [300, 250]]
+};
+
+var webAdDisplayed = {};
+var webAdSlots = {};
+var webAdDivIds = [];
+var webAdCallback = [];
+
+var mobileAdDisplayed = {};
+var mobileAdSlots = {};
+var mobileAdDivIds = [];
+var mobileAdCallback = [];
+
+if (window.googletag && googletag.apiReady) {
+  googletag.cmd.push(function() {
+    googletag.pubads().collapseEmptyDivs();
+    googletag.pubads().enableSingleRequest();
+    googletag.pubads().disableInitialLoad();
+    googletag.pubads().addEventListener("slotRenderEnded", function(event) {
+      var divId = event.slot.getSlotElementId();
+      if (typeof webAdCallback[divId] !== "undefined") {
+        webAdCallback[divId](event.isEmpty);
+      }
+      if (typeof mobileAdCallback[divId] !== "undefined") {
+        mobileAdCallback[divId](event.isEmpty);
+      }
+    });
+    googletag.enableServices();
+  });
+  googletag.pubads().addEventListener('slotRenderEnded', function(event) {
+    if (event.isEmpty){
+      if ($('#'+event.slot.getSlotElementId()).parent().parent().parent().parent().parent().prop('nodeName') == "FLYINGCARPETFIXEDBANNER"){
+       $('#'+event.slot.getSlotElementId()).parent().parent().parent().parent().parent().css('display','none');
+      }
+    }
+  });
+}
+
+function displayAd(divId, slot) {
+  googletag.display(divId);
+  googletag.pubads().refresh([slot]);
+}
+
+function showWebAd(adType, divId, callback) {
+  if (window.googletag && googletag.apiReady) {
+    googletag.cmd.push(function() {
+      var slot = googletag
+        .defineSlot(
+          webPrefix + adType,
+          webSlotSizes[adType],
+          divId)
+        .addService(googletag.pubads());
+
+      console.log(slot.getSlotElementId());
+      webAdSlots[divId] = slot;
+      webAdDivIds.push(divId);
+      if (typeof callback !== "undefined") {
+        webAdCallback[divId] = callback;
+      }
+      if ($("#" + divId).is(":visible")) {
+        displayAd(divId, slot);
+        webAdDisplayed[divId] = true;
+      } else {
+        webAdDisplayed[divId] = false;
+      }
+    });
+  }
+}
+
+function showMobileAd(adType, divId, callback) {
+  if (window.googletag && googletag.apiReady) {
+    googletag.cmd.push(function() {
+      var slot = null;
+      if (adType === "SplashAd") {
+        var h = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+        var slotSize = (h >= 559)? [320, 548] : [320, 460];
+        slot = googletag
+          .defineSlot(
+            mobileSplashPrefix + adType,
+            slotSize,
+            divId)
+          .addService(googletag.pubads());
+      } else {
+        slot = googletag
+          .defineSlot(
+            mobilePrefix + adType,
+            mobileSlotSizes[adType],
+            divId)
+          .addService(googletag.pubads());
+      }
+      console.log(slot);
+      mobileAdSlots[divId] = slot;
+      mobileAdDivIds.push(divId);
+      if (typeof callback !== "undefined") {
+        mobileAdCallback[divId] = callback;
+      }
+      if ($("#" + divId).is(":visible")) {
+
+        displayAd(divId, slot);
+        mobileAdDisplayed[divId] = true;
+      } else {
+        mobileAdDisplayed[divId] = false;
+      }
+    });
+  }
+}
+
+$(document).ready(function() {
+  $(window).on("resize", function() {
+    for (var i = 0; i < webAdDivIds.length; i++) {
+      if ($("#" + webAdDivIds[i]).is(":visible") && !webAdDisplayed[webAdDivIds[i]]) {
+        displayAd(webAdDivIds[i], webAdSlots[webAdDivIds[i]]);
+        webAdDisplayed[webAdDivIds[i]] = true;
+      }
+    }
+    for (var i = 0; i < mobileAdDivIds.length; i++) {
+      if ($("#" + mobileAdDivIds[i]).is(":visible") && !mobileAdDisplayed[mobileAdDivIds[i]]) {
+        displayAd(mobileAdDivIds[i], mobileAdSlots[mobileAdDivIds[i]]);
+        mobileAdDisplayed[mobileAdDivIds[i]] = true;
+      }
+    }
+  });
+});
+</script>
